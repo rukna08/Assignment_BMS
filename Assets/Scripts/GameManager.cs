@@ -18,6 +18,7 @@ public class GameManager : MonoBehaviour {
         show_tile_information();
     }
 
+    // Generates Cube Grid
     public void generate_grid() {
         if(grid.transform.childCount == 0) {
             cube_matrix = new GameObject[10, 10];
@@ -44,6 +45,7 @@ public class GameManager : MonoBehaviour {
         }
     }
 
+    // Shows the currently hovered tile information in a Text UI Element.
     void show_tile_information() { 
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;

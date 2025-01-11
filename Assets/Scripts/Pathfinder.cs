@@ -24,6 +24,7 @@ public class Pathfinder : MonoBehaviour {
     
     public float movement_speed = 5f;
 
+    // Node class for path chains.
     class Node {
         public int x, y;
         public int g, h;
@@ -33,10 +34,12 @@ public class Pathfinder : MonoBehaviour {
         public int f => g + h;
     }
 
+    // Value for calculating the total weight.
     int heuristic(int x1, int y1, int x2, int y2) => Mathf.Abs(x1 - x2) + Mathf.Abs(y1 - y2);
 
     bool is_valid(int x, int y, int max_x, int max_y) => x >= 0 && x < max_x && y >= 0 && y < max_y;
 
+    // Finds the List of Coordinate paths and returns it.
     List<Vector2Int> find_path(Func<int, int, bool> is_obstacle, int max_x, int max_y, int start_x, int start_y, int target_x, int target_y) {
         if (!is_valid(start_x, start_y, max_x, max_y) || !is_valid(target_x, target_y, max_x, max_y) || is_obstacle(target_x, target_y)) {
             return new List<Vector2Int>();
@@ -91,6 +94,7 @@ public class Pathfinder : MonoBehaviour {
         return new List<Vector2Int>();
     }
 
+    // Checks if there is any obstacle in this x and y.
     bool is_obstacle(int x, int y) {
         if (obstacle_data == null || y < 0 || y >= obstacle_data.GetLength(0) || x < 0 || x >= obstacle_data.GetLength(1)) {
             return true;
@@ -99,7 +103,11 @@ public class Pathfinder : MonoBehaviour {
     }
 
     void Start() {
+        
         StartCoroutine(initialise_obstacle_data());
+
+        // Sets the initial positions of the player and enemy if they are somewhere else.
+
         if (player != null) {
             player.position = new Vector3(0f, player.position.y, 0f);
         }
@@ -109,6 +117,7 @@ public class Pathfinder : MonoBehaviour {
         }
     }
 
+    // Uses the Obstacle Data which is a boolean matrix to determine obstacle positions.
     IEnumerator initialise_obstacle_data() {
         while (obstacle_manager == null || obstacle_manager.obstacle_data == null) {
             yield return null;
@@ -137,6 +146,7 @@ public class Pathfinder : MonoBehaviour {
     void Update() {
         if (!is_data_initialised || player == null || obstacle_data == null || game_manager == null) return;
 
+        // Mouse click to move the player to the highlighted position.
         if (Input.GetMouseButtonDown(0) && !is_player_moving) {
             is_player_moving = true;
 
@@ -148,6 +158,7 @@ public class Pathfinder : MonoBehaviour {
             Vector2Int player_grid_pos = new Vector2Int(Mathf.FloorToInt(player.position.x), Mathf.FloorToInt(player.position.z));
             Vector2Int enemy_grid_pos = new Vector2Int(Mathf.FloorToInt(enemy.position.x), Mathf.FloorToInt(enemy.position.z));
 
+            // The path for the player and enemy to travel respectively.
             List<Vector2Int> path = find_path(is_obstacle, grid_width, grid_height, player_grid_pos.x, player_grid_pos.y, (int)game_manager.hovered_point.x, (int)game_manager.hovered_point.y);
             List<Vector2Int> enemy_path = find_path(is_obstacle, grid_width, grid_height, enemy_grid_pos.x, enemy_grid_pos.y, player_grid_pos.x, player_grid_pos.y);
 
@@ -172,7 +183,7 @@ public class Pathfinder : MonoBehaviour {
             Vector3 target_position = new Vector3(current_path[current_path_index].x, player.position.y, current_path[current_path_index].y);
             player.position = Vector3.MoveTowards(player.position, target_position, movement_speed * Time.deltaTime);
             
-            // Enable Gizmos for displaying movement line.
+            // Enable Gizmos in the editor for displaying movement line.
             if(is_player_moving) {
                 Debug.DrawLine(player.position, target_position, Color.green);
             }
@@ -191,6 +202,8 @@ public class Pathfinder : MonoBehaviour {
                 Vector3 target_position = new Vector3(current_enemy_path[current_enemy_path_index].x, enemy.position.y, current_enemy_path[current_enemy_path_index].y);
                 enemy.position = Vector3.MoveTowards(enemy.position, target_position, movement_speed * Time.deltaTime);
 
+
+                // <= 1f so that the enemy stops at any 1 block adjacent to the player.
                 if(Vector3.Distance(enemy.position, target_position) <= 1f) {
                     current_enemy_path_index++;
                     if (current_enemy_path_index >= current_enemy_path.Count) {

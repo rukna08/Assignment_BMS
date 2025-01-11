@@ -16,10 +16,12 @@ public class ObstacleManager : MonoBehaviour {
                 obstacle_data[i, j] = false;
             }
         }
-        spawn_enemies();
+        spawn_obstacles();
     }
 
-    void spawn_enemies() {
+    // Spawns the obstacles in the game mode by pulling the data from
+    // the ObstacleScriptableObject.
+    void spawn_obstacles() {
         for(int i = 0; i < 10; i++) {
             for(int j = 0; j < 10; j++) {
                 int index = i * 10 + j;
