@@ -6,9 +6,10 @@ using UnityEngine;
 
 public class Pathfinder : MonoBehaviour {
     
-    public int grid_width = 10;
+    public int grid_width  = 10;
     public int grid_height = 10;
     public Transform player;
+    public Transform enemy;
     public ObstacleManager obstacle_manager;
     public GameManager game_manager;
 
@@ -17,6 +18,10 @@ public class Pathfinder : MonoBehaviour {
 
     int current_path_index = 0;
     List<Vector2Int> current_path;
+
+    int current_enemy_path_index = 0;
+    List<Vector2Int> current_enemy_path;
+    
     public float movement_speed = 5f;
 
     class Node {
@@ -98,6 +103,10 @@ public class Pathfinder : MonoBehaviour {
         if (player != null) {
             player.position = new Vector3(0f, player.position.y, 0f);
         }
+
+        if (enemy != null) {
+            enemy.position = new Vector3(0f, enemy.position.y, 9f);
+        }
     }
 
     IEnumerator initialise_obstacle_data() {
@@ -123,13 +132,13 @@ public class Pathfinder : MonoBehaviour {
         is_data_initialised = true;
     }
 
-    bool is_moving = false;
+    bool is_player_moving = false;
 
     void Update() {
         if (!is_data_initialised || player == null || obstacle_data == null || game_manager == null) return;
 
-        if (Input.GetMouseButtonDown(0) && !is_moving) {
-            is_moving = true;
+        if (Input.GetMouseButtonDown(0) && !is_player_moving) {
+            is_player_moving = true;
 
             if (obstacle_data.GetLength(0) != grid_height || obstacle_data.GetLength(1) != grid_width) {
                 grid_height = obstacle_data.GetLength(0);
@@ -137,14 +146,23 @@ public class Pathfinder : MonoBehaviour {
             }
 
             Vector2Int player_grid_pos = new Vector2Int(Mathf.FloorToInt(player.position.x), Mathf.FloorToInt(player.position.z));
+            Vector2Int enemy_grid_pos = new Vector2Int(Mathf.FloorToInt(enemy.position.x), Mathf.FloorToInt(enemy.position.z));
 
             List<Vector2Int> path = find_path(is_obstacle, grid_width, grid_height, player_grid_pos.x, player_grid_pos.y, (int)game_manager.hovered_point.x, (int)game_manager.hovered_point.y);
+            List<Vector2Int> enemy_path = find_path(is_obstacle, grid_width, grid_height, enemy_grid_pos.x, enemy_grid_pos.y, player_grid_pos.x, player_grid_pos.y);
 
             if (path != null && path.Count > 0) {
                 current_path = path;
                 current_path_index = 0;
             } else {
                 current_path = null;
+            }
+
+            if (enemy_path != null && enemy_path.Count > 0) {
+                current_enemy_path = path;
+                current_enemy_path_index = 0;
+            } else {
+                current_enemy_path = null;    
             }
         }
 
@@ -155,7 +173,7 @@ public class Pathfinder : MonoBehaviour {
             player.position = Vector3.MoveTowards(player.position, target_position, movement_speed * Time.deltaTime);
             
             // Enable Gizmos for displaying movement line.
-            if(is_moving) {
+            if(is_player_moving) {
                 Debug.DrawLine(player.position, target_position, Color.green);
             }
 
@@ -163,7 +181,21 @@ public class Pathfinder : MonoBehaviour {
                 current_path_index++;
                 if (current_path_index >= current_path.Count) {
                     current_path = null;
-                    is_moving = false;
+                    is_player_moving = false;
+                }
+            }
+        }
+
+        if(!is_player_moving) {
+            if (current_enemy_path != null && current_enemy_path_index < current_enemy_path.Count) {
+                Vector3 target_position = new Vector3(current_enemy_path[current_enemy_path_index].x, enemy.position.y, current_enemy_path[current_enemy_path_index].y);
+                enemy.position = Vector3.MoveTowards(enemy.position, target_position, movement_speed * Time.deltaTime);
+
+                if(Vector3.Distance(enemy.position, target_position) <= 1f) {
+                    current_enemy_path_index++;
+                    if (current_enemy_path_index >= current_enemy_path.Count) {
+                        current_enemy_path = null;    
+                    }
                 }
             }
         }
